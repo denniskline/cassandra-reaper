@@ -50,10 +50,12 @@ jmxCredentials:
     password: cassandrapassword
 
 logging:
-  level: DEBUG
+  level: WARN
   loggers:
     io.dropwizard: INFO
     org.eclipse.jetty: INFO
+    io.cassandrareaper.service: DEBUG
+    io.cassandrareaper.jmx: INFO
   appenders:
     - type: console
       logFormat: "%-6level [%d] [%t] %logger{5} - %msg %n"

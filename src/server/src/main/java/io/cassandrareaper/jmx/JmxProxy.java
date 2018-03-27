@@ -30,6 +30,7 @@ import javax.management.AttributeNotFoundException;
 import javax.management.MBeanException;
 import javax.management.NotificationListener;
 import javax.management.ReflectionException;
+import javax.management.openmbean.CompositeData;
 import javax.validation.constraints.NotNull;
 
 import org.apache.cassandra.repair.RepairParallelism;
@@ -146,4 +147,7 @@ public interface JmxProxy extends NotificationListener {
 
   void takeColumnFamilySnapshot(String keyspaceName, String columnFamilyName, String snapshotName)
       throws ReaperException;
+
+  Set<CompositeData> listStreams();
+
 }
