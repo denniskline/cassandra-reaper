@@ -96,9 +96,9 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   private int commandId;
   private final AtomicBoolean segmentFailed;
   private final UUID leaderElectionId;
-  private final AtomicBoolean gotFailedNotification;
-  private final AtomicBoolean gotSuccessNotification;
-  private final AtomicBoolean gotCompleteNotification;
+  private final AtomicBoolean failedNotified = new AtomicBoolean(false);
+  private final AtomicBoolean successNotified = new AtomicBoolean(false);
+  private final AtomicBoolean completeNotified = new AtomicBoolean(false);
 
 
   SegmentRunner(
@@ -127,9 +127,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     this.repairUnit = repairUnit;
     this.repairRunner = repairRunner;
     this.segmentFailed = new AtomicBoolean(false);
-    this.gotCompleteNotification = new AtomicBoolean(false);
-    this.gotFailedNotification = new AtomicBoolean(false);
-    this.gotSuccessNotification = new AtomicBoolean(false);
     this.leaderElectionId = repairUnit.getIncrementalRepair() ? repairRunner.getRepairRunId() : segmentId;
   }
 
@@ -815,10 +812,10 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                     .withId(segmentId)
                     .build());
 
-            gotSuccessNotification.set(Boolean.TRUE);
+            successNotified.set(true);
             // Since we can get out of order notifications,
             // we need to exit if we already got the COMPLETE notification.
-            if (gotCompleteNotification.get()) {
+            if (completeNotified.get()) {
               condition.signalAll();
               jmxProxy.removeRepairStatusHandler(repairNumber);
             }
@@ -837,10 +834,10 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
             segmentId,
             repairNumber);
         failOutsideSynchronizedBlock = true;
-        gotFailedNotification.set(Boolean.TRUE);
+        failedNotified.set(true);
         // Since we can get out of order notifications,
         // we need to exit if we already got the COMPLETE notification.
-        if (gotCompleteNotification.get()) {
+        if (completeNotified.get()) {
           condition.signalAll();
           jmxProxy.removeRepairStatusHandler(repairNumber);
         }
@@ -855,8 +852,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
             "repair session finished for segment with id '{}' and repair number '{}'",
             segmentId,
             repairNumber);
-        gotCompleteNotification.set(Boolean.TRUE);
-        if (gotSuccessNotification.get() || gotFailedNotification.get()) {
+        completeNotified.set(true);
+        if (successNotified.get() || failedNotified.get()) {
           condition.signalAll();
           jmxProxy.removeRepairStatusHandler(repairNumber);
         }
@@ -922,8 +919,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
             // Since we can get out of order notifications,
             // we need to exit if we already got the COMPLETE notification.
-            gotSuccessNotification.set(Boolean.TRUE);
-            if (gotCompleteNotification.get()) {
+            successNotified.set(true);
+            if (completeNotified.get()) {
               condition.signalAll();
               jmxProxy.removeRepairStatusHandler(repairNumber);
             }
@@ -944,8 +941,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         failOutsideSynchronizedBlock = true;
         // Since we can get out of order notifications,
         // we need to exit if we already got the COMPLETE notification.
-        gotFailedNotification.set(Boolean.TRUE);
-        if (gotCompleteNotification.get()) {
+        failedNotified.set(true);
+        if (completeNotified.get()) {
           condition.signalAll();
           jmxProxy.removeRepairStatusHandler(repairNumber);
         }
@@ -960,7 +957,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
             "repair session finished for segment with id '{}' and repair number '{}'",
             segmentId,
             repairNumber);
-        if (gotSuccessNotification.get() || gotFailedNotification.get()) {
+        if (successNotified.get() || failedNotified.get()) {
           condition.signalAll();
           jmxProxy.removeRepairStatusHandler(repairNumber);
         }
